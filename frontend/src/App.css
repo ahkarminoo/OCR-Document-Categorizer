@@ -1,0 +1,159 @@
+:root {
+  --bg-color: #121212;
+  --card-bg: #1e1e1e;
+  --text-main: #ffffff;
+  --text-muted: #a0a0a0;
+  --accent: #4DAAFE;
+  --accent-hover: #3b8fd9;
+  --error: #ff6b6b;
+}
+
+body {
+  margin: 0;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  display: flex;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+.app-container {
+  width: 100%;
+  max-width: 600px;
+  padding: 2rem 1rem;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+h1 {
+  color: var(--accent);
+  margin-bottom: 0.5rem;
+}
+
+header p {
+  color: var(--text-muted);
+  margin-top: 0;
+}
+
+.upload-card, .results-card {
+  background-color: var(--card-bg);
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+  margin-bottom: 1.5rem;
+}
+
+.file-input {
+  display: block;
+  width: 100%;
+  margin-bottom: 1rem;
+  padding: 0.5rem 0;
+  color: var(--text-muted);
+}
+
+button {
+  width: 100%;
+  padding: 0.8rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.scan-btn {
+  background-color: var(--accent);
+  color: #000;
+}
+
+.scan-btn:hover:not(:disabled) {
+  background-color: var(--accent-hover);
+}
+
+.scan-btn:disabled {
+  background-color: #333;
+  color: #666;
+  cursor: not-allowed;
+}
+
+.scanning-btn {
+  background-color: #333;
+  color: var(--accent);
+  cursor: wait;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.7; }
+  50% { opacity: 1; }
+  100% { opacity: 0.7; }
+}
+
+.error-box {
+  background-color: rgba(255, 107, 107, 0.1);
+  color: var(--error);
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--error);
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.results-card h2 {
+  margin-top: 0;
+  border-bottom: 1px solid #333;
+  padding-bottom: 0.5rem;
+}
+
+.result-group {
+  margin-bottom: 1.2rem;
+}
+
+.label {
+  font-weight: 600;
+  color: var(--text-muted);
+  display: block;
+  margin-bottom: 0.3rem;
+}
+
+.badge {
+  background-color: rgba(77, 170, 254, 0.15);
+  color: var(--accent);
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  display: inline-block;
+}
+
+.summary-text {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.key-info-list {
+  background-color: #121212;
+  padding: 1rem 1rem 1rem 2rem;
+  border-radius: 8px;
+  margin: 0;
+}
+
+.key-info-list li {
+  margin-bottom: 0.4rem;
+  font-family: monospace;
+  color: #e0e0e0;
+}
+.copy-btn {
+  margin-top: 10px;
+  background-color: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+}
+.copy-btn:hover {
+  background-color: rgba(77, 170, 254, 0.1);
+}
