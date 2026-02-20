@@ -22,7 +22,7 @@ MAX_VISION_OCR_OUTPUT_TOKENS = 1400
 
 # Heuristic confidence required to skip the AI categorisation call.
 # 0.0–1.0 — lower means AI is called more often.
-_HEURISTIC_CONFIDENCE_THRESHOLD = 0.30
+_HEURISTIC_CONFIDENCE_THRESHOLD = 0.25
 
 
 # ---------------------------------------------------------------------------
@@ -64,18 +64,26 @@ def _truncate(text: str) -> str:
 
 
 _CATEGORY_RULES = [
-    ("Invoice",  ["invoice", "bill to", "due date", "subtotal", "amount due", "tax",
-                  "payment terms", "total amount", "invoice no", "billing"]),
-    ("Receipt",  ["receipt", "cashier", "change due", "total paid", "thank you for",
-                  "amount paid", "transaction"]),
-    ("Resume",   ["resume", "curriculum vitae", "work experience", "experience", "education",
-                  "technical skills", "skills", "projects", "linkedin", "github", "references"]),
+    ("Invoice",  ["invoice", "bill to", "due date", "subtotal", "amount due",
+                  "payment terms", "total amount", "invoice no", "billing",
+                  "purchase order", "po number", "net amount", "remit to"]),
+    ("Receipt",  ["receipt", "subtotal", "total", "tax", "vat", "thank you",
+                  "items", "cashier", "change due", "total paid", "amount paid",
+                  "transaction", "before tax", "pos", "table", "staff",
+                  "quantity", "unit price", "guests", "counter", "qr code"]),
+    ("Resume",   ["resume", "curriculum vitae", "work experience", "experience",
+                  "education", "technical skills", "skills", "projects",
+                  "linkedin", "github", "references", "objective", "summary",
+                  "employment", "achievements", "certifications"]),
     ("Legal",    ["agreement", "contract", "terms and conditions", "party", "clause",
-                  "whereas", "hereinafter"]),
-    ("Medical",  ["patient", "diagnosis", "prescription", "dosage", "hospital", "physician",
-                  "symptoms"]),
+                  "whereas", "hereinafter", "jurisdiction", "liability",
+                  "indemnify", "arbitration", "governing law"]),
+    ("Medical",  ["patient", "diagnosis", "prescription", "dosage", "hospital",
+                  "physician", "symptoms", "treatment", "medication", "clinic",
+                  "medical record", "blood pressure", "allergies"]),
     ("Academic", ["university", "college", "course", "exam", "assignment", "grade",
-                  "student id", "syllabus"]),
+                  "student id", "syllabus", "semester", "lecture", "gpa",
+                  "thesis", "dissertation", "faculty", "department"]),
 ]
 
 

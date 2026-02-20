@@ -1,5 +1,14 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import './App.css'
+
+const LOADING_STEPS = [
+  'Detecting document edges…',
+  'Cropping & correcting perspective…',
+  'Running OCR on the image…',
+  'Extracting text…',
+  'Categorising content…',
+  'Almost done…',
+]
 
 function App() {
   const [file, setFile] = useState(null)
@@ -7,6 +16,16 @@ function App() {
   const [result, setResult] = useState(null)
   const [error, setError] = useState(null)
   const [editableText, setEditableText] = useState('')
+  const [aiRetrying, setAiRetrying] = useState(false)
+  const [loadingStep, setLoadingStep] = useState(0)
+
+  useEffect(() => {
+    if (!loading && !aiRetrying) { setLoadingStep(0); return }
+    const id = setInterval(() => {
+      setLoadingStep(s => Math.min(s + 1, LOADING_STEPS.length - 1))
+    }, 2200)
+    return () => clearInterval(id)
+  }, [loading, aiRetrying])
   const MAX_UPLOAD_MB = 10
   const API_BASE = import.meta.env.VITE_API_BASE_URL || `http://${window.location.hostname}:8000`
   const cameraInputRef = useRef(null)
@@ -25,27 +44,31 @@ function App() {
 
     setError(null)
     setFile(selectedFile)
+    // Clear previous result so the "Retry with AI" button doesn't carry over
+    // to the newly selected file.
+    setResult(null)
+    setEditableText('')
   }
 
-  const handleScan = async () => {
+  const handleScan = async (forceVision = false) => {
     if (!file) {
       alert("Please select an image first!")
       return
     }
 
-    setLoading(true)
+    if (forceVision) setAiRetrying(true)
+    else setLoading(true)
     setError(null)
-    setResult(null)
-    setEditableText('')
+    if (!forceVision) { setResult(null); setEditableText('') }
 
     const formData = new FormData()
     formData.append('file', file)
+    if (forceVision) formData.append('force_vision', 'true')
     let timeoutId
 
     try {
-      // Connecting to your FastAPI local server
       const controller = new AbortController()
-      timeoutId = setTimeout(() => controller.abort(), 45000)
+      timeoutId = setTimeout(() => controller.abort(), 60000)
       const response = await fetch(`${API_BASE}/api/scan`, {
         method: 'POST',
         body: formData,
@@ -75,11 +98,27 @@ function App() {
     } finally {
       if (timeoutId) clearTimeout(timeoutId)
       setLoading(false)
+      setAiRetrying(false)
     }
   }
 
   return (
     <div className="app-container">
+
+      {(loading || aiRetrying) && (
+        <div className="loading-overlay">
+          <div className="loading-spinner" />
+          <div className="loading-steps">
+            <p className="loading-title">
+              {aiRetrying ? 'Asking AI Vision…' : 'Processing Document'}
+            </p>
+            <p key={loadingStep} className="loading-step">
+              {LOADING_STEPS[loadingStep]}
+            </p>
+          </div>
+        </div>
+      )}
+
       <header>
         <h1>📄 AI Document Scanner</h1>
         <p>Upload a document image to crop, extract, and categorize text</p>
@@ -200,6 +239,25 @@ function App() {
       >
         Copy Extracted Text
       </button>
+
+      {/* AI Vision button — at the bottom so it's never accidentally tapped */}
+      <div className={
+        (result.results.subcategory === 'UnreadableContent' || result.results._classification_method === 'fallback_quota')
+          ? 'ai-retry-box ai-retry-box--warn'
+          : 'ai-retry-box ai-retry-box--subtle'
+      }>
+        {(result.results.subcategory === 'UnreadableContent' || result.results._classification_method === 'fallback_quota')
+          ? <p>⚠️ Document could not be read clearly. AI Vision can extract text directly from the image.</p>
+          : <p>Not satisfied? AI Vision re-reads the image for better accuracy.</p>
+        }
+        <button
+          className="ai-retry-btn"
+          disabled={aiRetrying}
+          onClick={() => handleScan(true)}
+        >
+          {aiRetrying ? '⏳ Asking AI Vision...' : '✨ Improve with AI Vision'}
+        </button>
+      </div>
 
       {result.scan_id && result.artifacts && (
         <div className="download-row">

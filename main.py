@@ -5,7 +5,7 @@ import uuid
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 
 import pytesseract
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
@@ -31,6 +31,19 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="OCR Document Scanner API")
+
+
+@app.on_event("startup")
+async def _warmup():
+    """Pre-load OCR engines at startup so the first scan request isn't slow.
+    EasyOCR downloads its models here (once) rather than during a live request.
+    """
+    import asyncio
+    loop = asyncio.get_event_loop()
+    from ocr_engine import _get_paddle, _get_easyocr
+    await loop.run_in_executor(None, _get_paddle)
+    await loop.run_in_executor(None, _get_easyocr)
+    logger.info("OCR engines warmed up.")
 
 MIN_WORDS_FOR_AI       = 6
 GOOD_OCR_WORDS         = 20
@@ -123,7 +136,10 @@ async def ready():
 
 
 @app.post("/api/scan")
-async def scan_document(file: UploadFile = File(...)):
+async def scan_document(
+    file: UploadFile = File(...),
+    force_vision: bool = Form(False),
+):
     if not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="File must be an image.")
 
@@ -171,17 +187,22 @@ async def scan_document(file: UploadFile = File(...)):
     already_classified = heuristic_conf >= _HEURISTIC_CONFIDENCE_THRESHOLD
     logger.info(
         "OCR summary — engine=%s words=%d conf=%.1f garbled=%s "
-        "heuristic_conf=%.2f already_classified=%s",
+        "heuristic_conf=%.2f already_classified=%s force_vision=%s",
         ocr_engine_used, ocr_result["word_count"], ocr_result["avg_confidence"],
-        text_garbled, heuristic_conf, already_classified,
+        text_garbled, heuristic_conf, already_classified, force_vision,
     )
 
     # Invoke Vision OCR only when text quality is poor AND the document cannot
     # already be classified locally.  The already_classified guard means known
     # document types (Resume, Invoice …) never pay the Vision OCR cost even if
     # their OCR confidence is low (e.g. fancy designed templates).
+    #
+    # force_vision=True means the user explicitly clicked "Improve with AI Vision"
+    # — always honour it unconditionally.  Accidental clicks are prevented by the
+    # frontend clearing the result the moment a new file is selected.
     should_try_vision = (
         VISION_OCR_MODE == "always"
+        or force_vision
         or (text_garbled and not already_classified)
         or (very_low_conf and not already_classified)
     )
@@ -215,7 +236,8 @@ async def scan_document(file: UploadFile = File(...)):
     # If Vision OCR was needed but failed (e.g. quota), the remaining text is
     # unreliable Tesseract output — skip AI categorization and return Other so
     # we don't waste a second API call on garbage input.
-    ocr_text_reliable = not (vision_ocr_failed and very_low_conf)
+    # Exception: if the user explicitly forced AI, try categorization anyway.
+    ocr_text_reliable = force_vision or not (vision_ocr_failed and very_low_conf)
 
     try:
         if ocr_result["word_count"] < MIN_WORDS_FOR_AI:

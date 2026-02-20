@@ -39,6 +39,43 @@ def _get_paddle():
         return None
 
 
+@lru_cache(maxsize=1)
+def _get_easyocr():
+    """Load EasyOCR reader (downloaded once, cached in memory)."""
+    try:
+        import easyocr
+        return easyocr.Reader(["en"], verbose=False)
+    except Exception:
+        return None
+
+
+def _easyocr_extract(image_bgr) -> dict | None:
+    """Run EasyOCR — works well on handwriting, fully local, no API needed."""
+    reader = _get_easyocr()
+    if reader is None:
+        return None
+    try:
+        results = reader.readtext(image_bgr, detail=1, paragraph=False)
+    except Exception:
+        return None
+    if not results:
+        return None
+    lines, confs = [], []
+    for (_bbox, word, conf) in results:
+        word = str(word or "").strip()
+        if word:
+            lines.append(word)
+            confs.append(float(conf) * 100.0)
+    if not lines:
+        return None
+    text       = _postprocess(" ".join(lines))
+    word_count = len([w for w in text.split() if w])
+    avg_conf   = round(sum(confs) / len(confs), 2) if confs else 0.0
+    return {"text": text, "avg_confidence": avg_conf,
+            "word_count": word_count, "engine": "easyocr",
+            "score": avg_conf + word_count * 1.8}
+
+
 def _paddle_extract(image_bgr) -> dict | None:
     ocr = _get_paddle()
     if ocr is None:
@@ -78,6 +115,13 @@ def extract_text(image_bytes: bytes, fast_mode: bool = True) -> dict:
         result = _paddle_extract(color)
         if result and result["word_count"] >= 4:
             return {k: result[k] for k in ("text", "avg_confidence", "word_count", "engine")}
+
+    # EasyOCR — local, no API, better than Tesseract on handwriting.
+    # Only used when PaddleOCR returns nothing (likely a handwritten page).
+    easy = _easyocr_extract(color if color is not None else
+                            cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR))
+    if easy and easy["word_count"] >= 4:
+        return {k: easy[k] for k in ("text", "avg_confidence", "word_count", "engine")}
 
     lang = os.getenv("TESS_LANG", "eng").strip() or "eng"
     if fast_mode:
