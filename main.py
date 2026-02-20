@@ -343,4 +343,5 @@ async def get_scan_artifact(scan_id: str, artifact_name: str):
 
 if __name__ == "__main__":
     dev_mode = os.getenv("DEV_MODE", "true").lower() == "true"
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=dev_mode)
+    port = int(os.getenv("PORT", "8000"))
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=dev_mode)
