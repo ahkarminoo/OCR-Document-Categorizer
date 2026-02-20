@@ -10,3 +10,4 @@ httpx
 paddleocr
 paddlepaddle
 easyocr
+python-multipart
