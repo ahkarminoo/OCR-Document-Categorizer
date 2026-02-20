@@ -35,15 +35,21 @@ app = FastAPI(title="OCR Document Scanner API")
 
 @app.on_event("startup")
 async def _warmup():
-    """Pre-load OCR engines at startup so the first scan request isn't slow.
-    EasyOCR downloads its models here (once) rather than during a live request.
+    """Load OCR models in the background so the server starts immediately.
+    The /health endpoint responds right away; models load behind the scenes.
     """
     import asyncio
-    loop = asyncio.get_event_loop()
-    from ocr_engine import _get_paddle, _get_easyocr
-    await loop.run_in_executor(None, _get_paddle)
-    await loop.run_in_executor(None, _get_easyocr)
-    logger.info("OCR engines warmed up.")
+
+    async def _load_models():
+        loop = asyncio.get_event_loop()
+        from ocr_engine import _get_paddle, _get_easyocr
+        await loop.run_in_executor(None, _get_paddle)
+        logger.info("PaddleOCR ready.")
+        await loop.run_in_executor(None, _get_easyocr)
+        logger.info("EasyOCR ready.")
+        logger.info("All OCR engines warmed up.")
+
+    asyncio.create_task(_load_models())
 
 MIN_WORDS_FOR_AI       = 6
 GOOD_OCR_WORDS         = 20
