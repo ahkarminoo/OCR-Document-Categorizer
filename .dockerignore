@@ -1,7 +1,7 @@
-venv/
 __pycache__/
+venv/
 .env
-frontend/node_modules/
-frontend/dist/
 outputs/
 .tmp/
+frontend/node_modules/
+frontend/dist/

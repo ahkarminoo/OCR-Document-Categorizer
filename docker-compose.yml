@@ -1,0 +1,27 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - TESS_LANG=${TESS_LANG:-eng}
+      - OUTPUT_DIR=/data/outputs
+      - CORS_ALLOW_ORIGINS=http://localhost:8080
+    volumes:
+      - outputs:/data/outputs
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+
+volumes:
+  outputs:
+

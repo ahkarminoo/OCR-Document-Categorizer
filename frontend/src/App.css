@@ -55,6 +55,45 @@ header p {
   color: var(--text-muted);
 }
 
+.file-input-hidden {
+  display: none;
+}
+
+.source-row {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.secondary-btn {
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: 8px;
+  background-color: transparent;
+  border: 1px solid #333;
+  color: var(--text-main);
+}
+
+.secondary-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.secondary-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.selected-file {
+  margin: 0.25rem 0 1rem 0;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.selected-file-name {
+  color: var(--text-main);
+  font-weight: 600;
+}
+
 button {
   width: 100%;
   padding: 0.8rem;
@@ -136,6 +175,24 @@ button {
   line-height: 1.5;
 }
 
+.editable-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  background-color: #121212;
+  color: #eaeaea;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 0.8rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  line-height: 1.4;
+  resize: vertical;
+}
+
+.editable-textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
 .key-info-list {
   background-color: #121212;
   padding: 1rem 1rem 1rem 2rem;
@@ -155,5 +212,48 @@ button {
   color: var(--accent);
 }
 .copy-btn:hover {
+  background-color: rgba(77, 170, 254, 0.1);
+}
+
+.meta-group {
+  margin-top: 1rem;
+  border-top: 1px solid #333;
+  padding-top: 0.8rem;
+}
+
+.meta-text {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+}
+
+.preview-image {
+  width: 100%;
+  max-height: 320px;
+  object-fit: contain;
+  border-radius: 10px;
+  border: 1px solid #333;
+  background: #0f0f0f;
+}
+
+.download-row {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.download-link {
+  flex: 1;
+  text-align: center;
+  padding: 0.65rem 0.8rem;
+  border-radius: 8px;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+  transition: background-color 0.2s ease;
+}
+
+.download-link:hover {
   background-color: rgba(77, 170, 254, 0.1);
 }

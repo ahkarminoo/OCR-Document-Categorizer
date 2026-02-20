@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import './App.css'
 
 function App() {
@@ -6,9 +6,25 @@ function App() {
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState(null)
   const [error, setError] = useState(null)
+  const [editableText, setEditableText] = useState('')
+  const MAX_UPLOAD_MB = 10
+  const API_BASE = import.meta.env.VITE_API_BASE_URL || `http://${window.location.hostname}:8000`
+  const cameraInputRef = useRef(null)
+  const galleryInputRef = useRef(null)
 
   const handleFileChange = (e) => {
-    setFile(e.target.files[0])
+    const selectedFile = e.target.files[0]
+    if (!selectedFile) return
+
+    const sizeMb = selectedFile.size / (1024 * 1024)
+    if (sizeMb > MAX_UPLOAD_MB) {
+      setError(`File too large (${sizeMb.toFixed(1)} MB). Please use an image under ${MAX_UPLOAD_MB} MB.`)
+      setFile(null)
+      return
+    }
+
+    setError(null)
+    setFile(selectedFile)
   }
 
   const handleScan = async () => {
@@ -20,26 +36,44 @@ function App() {
     setLoading(true)
     setError(null)
     setResult(null)
+    setEditableText('')
 
     const formData = new FormData()
     formData.append('file', file)
+    let timeoutId
 
     try {
       // Connecting to your FastAPI local server
-      const response = await fetch('http://127.0.0.1:8000/api/scan', {
+      const controller = new AbortController()
+      timeoutId = setTimeout(() => controller.abort(), 45000)
+      const response = await fetch(`${API_BASE}/api/scan`, {
         method: 'POST',
-        body: formData
+        body: formData,
+        signal: controller.signal
       })
 
       if (!response.ok) {
-        throw new Error(`Server error: ${response.status}`)
+        let detail = `Server error: ${response.status}`
+        try {
+          const errData = await response.json()
+          if (errData?.detail) detail = errData.detail
+        } catch {
+          // keep default message if backend didn't return JSON
+        }
+        throw new Error(detail)
       }
 
       const data = await response.json()
       setResult(data)
+      setEditableText(data?.results?.editable_text || '')
     } catch (err) {
-      setError(err.message || "Failed to connect to the server.")
+      if (err.name === 'AbortError') {
+        setError('Request timed out. Try a smaller or clearer image.')
+      } else {
+        setError(err.message || "Failed to connect to the server.")
+      }
     } finally {
+      if (timeoutId) clearTimeout(timeoutId)
       setLoading(false)
     }
   }
@@ -48,17 +82,50 @@ function App() {
     <div className="app-container">
       <header>
         <h1>📄 AI Document Scanner</h1>
-        <p>Upload an image to extract context and text</p>
+        <p>Upload a document image to crop, extract, and categorize text</p>
       </header>
       
       <div className="upload-card">
-        <input 
-          type="file" 
-          onChange={handleFileChange} 
-          accept="image/*" 
-          capture="environment"  // This triggers the rear camera on mobile!
-          className="file-input"
+        <div className="source-row">
+          <button
+            type="button"
+            className="secondary-btn"
+            disabled={loading}
+            onClick={() => cameraInputRef.current?.click()}
+          >
+            Take Photo (Camera)
+          </button>
+          <button
+            type="button"
+            className="secondary-btn"
+            disabled={loading}
+            onClick={() => galleryInputRef.current?.click()}
+          >
+            Choose from Gallery
+          </button>
+        </div>
+
+        <input
+          ref={cameraInputRef}
+          type="file"
+          onChange={handleFileChange}
+          accept="image/*"
+          capture="environment"
+          className="file-input-hidden"
         />
+        <input
+          ref={galleryInputRef}
+          type="file"
+          onChange={handleFileChange}
+          accept="image/*"
+          className="file-input-hidden"
+        />
+
+        {file && (
+          <div className="selected-file">
+            Selected: <span className="selected-file-name">{file.name}</span>
+          </div>
+        )}
         <button 
           onClick={handleScan} 
           disabled={loading || !file}
@@ -73,15 +140,42 @@ function App() {
   {result && result.results && (
     <div className="results-card">
       <h2>Scan Results</h2>
+
+      {result.scan_id && result.artifacts?.cropped_image && (
+        <div className="result-group">
+          <span className="label">Cropped Preview:</span>
+          <img
+            className="preview-image"
+            src={`${API_BASE}${result.artifacts.cropped_image}?t=${Date.now()}`}
+            alt="Cropped document preview"
+          />
+        </div>
+      )}
       
       <div className="result-group">
         <span className="label">Category:</span>
         <span className="value badge">{result.results.category || "N/A"}</span>
       </div>
+
+      <div className="result-group">
+        <span className="label">Subcategory:</span>
+        <span className="value badge">{result.results.subcategory || "N/A"}</span>
+      </div>
       
       <div className="result-group">
         <span className="label">Summary:</span>
         <p className="value summary-text">{result.results.summary || "No summary provided."}</p>
+      </div>
+
+      <div className="result-group">
+        <span className="label">Editable Extracted Text:</span>
+        <textarea
+          className="editable-textarea"
+          value={editableText}
+          onChange={(e) => setEditableText(e.target.value)}
+          rows={10}
+          placeholder="Extracted OCR text will appear here..."
+        />
       </div>
       
       <div className="result-group">
@@ -97,16 +191,44 @@ function App() {
       <button 
         className="copy-btn"
         onClick={() => {
-          // Safe check for the join operation
-          const text = result.results.key_information?.join('\n') || "";
+          const text = editableText || ""
           if (text) {
             navigator.clipboard.writeText(text);
-            alert("Copied to clipboard!");
+            alert("Extracted text copied to clipboard!");
           }
         }}
       >
-        Copy Info to Clipboard
+        Copy Extracted Text
       </button>
+
+      {result.scan_id && result.artifacts && (
+        <div className="download-row">
+          {result.artifacts.ocr_text && (
+            <a className="download-link" href={`${API_BASE}${result.artifacts.ocr_text}`} target="_blank" rel="noreferrer">
+              Download OCR Text
+            </a>
+          )}
+          {result.artifacts.result_json && (
+            <a className="download-link" href={`${API_BASE}${result.artifacts.result_json}`} target="_blank" rel="noreferrer">
+              Download JSON
+            </a>
+          )}
+        </div>
+      )}
+
+      {result.meta && (
+        <div className="result-group meta-group">
+          <span className="label">Processing Metadata:</span>
+          <p className="meta-text">
+            Document detected: {result.meta.document_detected ? 'Yes' : 'No'} | OCR words: {result.meta.ocr_word_count} | Avg confidence: {result.meta.ocr_avg_confidence} | Method: {result.meta.classification_method}
+          </p>
+          {result.meta.durations_ms && (
+            <p className="meta-text">
+              Timing (ms): preprocess {result.meta.durations_ms.preprocess}, ocr {result.meta.durations_ms.ocr}, categorize {result.meta.durations_ms.categorize}, total {result.meta.durations_ms.total}
+            </p>
+          )}
+        </div>
+      )}
     </div>
   )}
     </div>

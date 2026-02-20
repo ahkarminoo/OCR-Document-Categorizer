@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+opencv-python
+numpy
+python-dotenv
+google-genai
+pytesseract
+Pillow
+httpx
+paddleocr
+paddlepaddle
