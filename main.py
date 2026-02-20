@@ -58,15 +58,11 @@ AI_TIMEOUT_SECONDS     = 8
 HANDWRITING_FALLBACK_CONF = 60
 VISION_OCR_MODE = (os.getenv("VISION_OCR_MODE") or "auto").strip().lower()
 
-_cors_origins_env = (os.getenv("CORS_ALLOW_ORIGINS") or "").strip()
+_cors_origins_env = (os.getenv("CORS_ALLOW_ORIGINS") or "*").strip()
 _cors_origins = (
     ["*"]
     if "*" in _cors_origins_env
-    else [
-        o.strip()
-        for o in (_cors_origins_env or "http://localhost:5173,http://127.0.0.1:5173").split(",")
-        if o.strip()
-    ]
+    else [o.strip() for o in _cors_origins_env.split(",") if o.strip()]
 )
 app.add_middleware(
     CORSMiddleware,
