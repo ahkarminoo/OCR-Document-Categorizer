@@ -3,15 +3,16 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    env_file:
+      - .env
     environment:
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
-      - TESS_LANG=${TESS_LANG:-eng}
       - OUTPUT_DIR=/data/outputs
-      - CORS_ALLOW_ORIGINS=http://localhost:8080
+      - CORS_ALLOW_ORIGINS=${CORS_ALLOW_ORIGINS:-*}
     volumes:
       - outputs:/data/outputs
     ports:
       - "8000:8000"
+    restart: unless-stopped
 
   frontend:
     build:
@@ -21,7 +22,7 @@ services:
       - "8080:80"
     depends_on:
       - backend
+    restart: unless-stopped
 
 volumes:
   outputs:
-

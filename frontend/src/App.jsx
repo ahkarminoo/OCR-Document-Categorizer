@@ -166,7 +166,7 @@ function App() {
           </div>
         )}
         <button 
-          onClick={handleScan} 
+          onClick={() => handleScan()}
           disabled={loading || !file}
           className={loading ? "scanning-btn" : "scan-btn"}
         >
