@@ -26,8 +26,13 @@ def _postprocess(text: str) -> str:
     return t.replace("\x0c", "").strip()
 
 
+_CLOUD_MODE = os.getenv("CLOUD_MODE", "false").lower() == "true"
+
+
 @lru_cache(maxsize=1)
 def _get_paddle():
+    if _CLOUD_MODE:
+        return None
     try:
         from paddleocr import PaddleOCR
     except Exception:
@@ -42,6 +47,8 @@ def _get_paddle():
 @lru_cache(maxsize=1)
 def _get_easyocr():
     """Load EasyOCR reader (downloaded once, cached in memory)."""
+    if _CLOUD_MODE:
+        return None
     try:
         import easyocr
         return easyocr.Reader(["en"], verbose=False)

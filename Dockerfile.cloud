@@ -1,0 +1,28 @@
+# Lightweight cloud image — no EasyOCR / PaddleOCR / PyTorch.
+# Fits on free-tier hosts (Railway, Render) with ~256 MB RAM.
+# Pipeline: Tesseract (local) → Gemini Vision (API, only when needed).
+FROM python:3.11-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    CLOUD_MODE=true \
+    DEV_MODE=false
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    tesseract-ocr \
+    libgl1 \
+    libglib2.0-0 \
+  && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY requirements-cloud.txt /app/requirements-cloud.txt
+RUN pip install --no-cache-dir -r /app/requirements-cloud.txt
+
+COPY . /app
+
+RUN mkdir -p /data/outputs
+ENV OUTPUT_DIR=/data/outputs
+
+EXPOSE 8000
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]

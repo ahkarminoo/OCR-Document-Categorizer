@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+opencv-python-headless
+numpy
+python-dotenv
+google-genai
+pytesseract
+Pillow
+httpx
+python-multipart
