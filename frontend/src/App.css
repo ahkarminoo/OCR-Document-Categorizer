@@ -8,6 +8,12 @@
   --error: #ff6b6b;
 }
 
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 body {
   margin: 0;
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
@@ -16,6 +22,7 @@ body {
   display: flex;
   justify-content: center;
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
 .app-container {
@@ -47,6 +54,31 @@ header p {
   margin-bottom: 1.5rem;
 }
 
+.workflow-card {
+  background-color: #171717;
+  border: 1px solid #2a2a2a;
+  border-radius: 12px;
+  padding: 1rem 1.1rem;
+  margin-bottom: 1.2rem;
+}
+
+.workflow-card h2 {
+  margin: 0 0 0.65rem 0;
+  font-size: 1rem;
+  color: var(--accent);
+}
+
+.workflow-card ul {
+  margin: 0;
+  padding-left: 1.2rem;
+  color: var(--text-muted);
+}
+
+.workflow-card li {
+  margin-bottom: 0.45rem;
+  line-height: 1.4;
+}
+
 .file-input {
   display: block;
   width: 100%;
@@ -60,7 +92,8 @@ header p {
 }
 
 .source-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 0.75rem;
   margin-bottom: 1rem;
 }
@@ -92,6 +125,7 @@ header p {
 .selected-file-name {
   color: var(--text-main);
   font-weight: 600;
+  word-break: break-all;
 }
 
 button {
@@ -225,6 +259,7 @@ button {
   margin: 0;
   color: var(--text-muted);
   font-size: 0.92rem;
+  overflow-wrap: anywhere;
 }
 
 .preview-image {
@@ -366,4 +401,27 @@ button {
 @keyframes fadeStep {
   from { opacity: 0; transform: translateY(4px); }
   to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 640px) {
+  .app-container {
+    padding: 1rem 0.7rem;
+  }
+
+  .upload-card,
+  .results-card {
+    padding: 1rem;
+  }
+
+  .source-row {
+    grid-template-columns: 1fr;
+  }
+
+  .download-row {
+    flex-direction: column;
+  }
+
+  .ai-retry-btn {
+    width: 100%;
+  }
 }

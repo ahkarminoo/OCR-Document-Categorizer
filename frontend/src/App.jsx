@@ -10,6 +10,13 @@ const LOADING_STEPS = [
   'Almost done…',
 ]
 
+const WORKFLOW_STEPS = [
+  'Detect and crop only the document from a wide-angle image.',
+  'Extract readable OCR text from the cleaned document area.',
+  'Output text as editable content you can copy or refine.',
+  'Categorize content into clear topic headings for any document type.',
+]
+
 function App() {
   const [file, setFile] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -120,9 +127,18 @@ function App() {
       )}
 
       <header>
-        <h1>📄 AI Document Scanner</h1>
-        <p>Upload a document image to crop, extract, and categorize text</p>
+        <h1>📄 OCR Document Categorizer</h1>
+        <p>Crop documents, extract editable OCR text, and categorize into topic headings.</p>
       </header>
+
+      <section className="workflow-card">
+        <h2>How It Works</h2>
+        <ul>
+          {WORKFLOW_STEPS.map((step) => (
+            <li key={step}>{step}</li>
+          ))}
+        </ul>
+      </section>
       
       <div className="upload-card">
         <div className="source-row">
@@ -178,7 +194,7 @@ function App() {
 
   {result && result.results && (
     <div className="results-card">
-      <h2>Scan Results</h2>
+      <h2>Document Output</h2>
 
       {result.scan_id && result.artifacts?.cropped_image && (
         <div className="result-group">
@@ -218,12 +234,11 @@ function App() {
       </div>
       
       <div className="result-group">
-        <span className="label">Key Information Found:</span>
+        <span className="label">Desired Topic Headings:</span>
         <ul className="key-info-list">
-          {/* The ?. prevents the crash if key_information is missing */}
           {result.results.key_information?.map((info, index) => (
             <li key={index}>{info}</li>
-          )) || <li>No specific data extracted.</li>}
+          )) || <li>No headings extracted.</li>}
         </ul>
       </div>
 
