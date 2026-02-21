@@ -1,54 +1,95 @@
 # OCR Document Categorizer
 
-## Backend Setup
+Production-ready OCR pipeline that:
+- crops document pages from wide-angle/noisy photos,
+- extracts editable text,
+- categorizes content into topic headings,
+- uses AI only when local confidence is low.
 
-1. Create and activate a virtual environment.
-2. Install Python dependencies:
+## Key Features
 
-```bash
-pip install -r requirement.txt
-```
+- **Document crop + perspective correction** using OpenCV.
+- **Editable OCR output** from local OCR engines.
+- **Category + heading extraction** for common document types.
+- **Local-first architecture** with AI fallback (not an AI-only wrapper).
+- **Deployment-ready API** with health/ready checks and artifact endpoints.
+- **Mobile-friendly frontend** with camera upload support.
 
-3. Install Tesseract OCR engine on your OS:
-   - Windows: install from UB Mannheim package or official Tesseract builds.
-   - macOS: `brew install tesseract`
-   - Ubuntu/Debian: `sudo apt-get install tesseract-ocr`
+## Processing Pipeline
 
-4. Ensure `tesseract` is available in your system `PATH`.
-5. Add your Gemini key in `.env`:
+1. **Preprocess image**  
+   Detect document boundaries, crop page region, and correct perspective.
+
+2. **Run OCR locally first**  
+   Prefer local OCR output for speed/cost control.
+
+3. **Classify with heuristics first**  
+   If document type is obvious (e.g., invoice/resume/receipt), classify locally.
+
+4. **AI fallback only when needed**  
+   Gemini is called only for low-confidence or ambiguous cases.
+
+## Fallback Strategy (Cost and Reliability)
+
+- **OCR fallback chain:** local OCR -> alternate local OCR -> Gemini Vision OCR (conditional).
+- **Categorization fallback:** heuristic classification first, AI categorization only when heuristic confidence is low.
+- **Manual override:** frontend includes an "Improve with AI Vision" action for hard cases.
+- **Quota-aware behavior:** when AI quota is exhausted, pipeline still returns local OCR results and structured fallback output.
+
+## API Flow
+
+### `POST /api/scan`
+
+Input:
+- `file` (multipart image)
+- `force_vision` (optional, boolean)
+
+Output:
+- `scan_id`
+- `results`:
+  - `category`
+  - `subcategory`
+  - `summary`
+  - `editable_text`
+  - `key_information`
+- `artifacts` paths (cropped image, OCR text, JSON)
+- `meta` (document detected, OCR confidence, timings, classification method)
+
+### Other endpoints
+
+- `GET /health` - liveness check
+- `GET /ready` - dependency/config readiness check
+- `GET /api/scans/{scan_id}/{artifact}` - fetch scan artifacts  
+  Supported artifacts: `cropped.jpg`, `ocr_ready.png`, `ocr.txt`, `result.json`
+
+## Environment Variables
 
 ```env
 GEMINI_API_KEY=your_key_here
-TESS_LANG=eng
-PADDLE_LANG=en
 VISION_OCR_MODE=auto
-# Optional: persist artifacts (cropped image, OCR text, JSON) per scan
 OUTPUT_DIR=outputs
-CORS_ALLOW_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+CORS_ALLOW_ORIGINS=*
+DEV_MODE=true
+CLOUD_MODE=false
+PADDLE_LANG=en
 ```
 
-6. Run API:
+Notes:
+- `VISION_OCR_MODE=auto` keeps AI usage minimal.
+- `CLOUD_MODE=true` is recommended on lower-memory cloud instances.
+
+## Local Setup
+
+### Backend
 
 ```bash
+pip install -r requirement.txt
 python main.py
 ```
 
-### Deployment-ready endpoints
+Install Tesseract on your OS and ensure `tesseract` is available in `PATH`.
 
-- `GET /health`: basic liveness check
-- `GET /ready`: checks whether Gemini key is set, Tesseract is available, and output dir configured
-- `POST /api/scan`: returns structured OCR + classification results
-- `GET /api/scans/{scan_id}/{artifact}`: download saved artifacts (when `OUTPUT_DIR` is configured)
-  - artifacts: `cropped.jpg`, `ocr_ready.png`, `ocr.txt`, `result.json`
-
-### OCR engine notes
-
-- The app now prefers `PaddleOCR` for better real-world photo accuracy.
-- If PaddleOCR is unavailable, it falls back to Tesseract automatically.
-- For very low-confidence text, it can also use Gemini vision OCR fallback.
-- Set `VISION_OCR_MODE=always` to force Gemini vision OCR for handwritten pages.
-
-## Frontend Setup
+### Frontend
 
 ```bash
 cd frontend
@@ -56,27 +97,15 @@ npm install
 npm run dev
 ```
 
-Frontend expects backend at `http://127.0.0.1:8000`.
+Set `VITE_API_BASE_URL` when pointing frontend to a deployed backend.
 
-## Local smoke test (no browser needed)
-
-```bash
-python smoke_test.py
-```
-
-## Docker (deployment-style local run)
-
-1. Create an `.env` in the repo root containing at least:
-
-```env
-GEMINI_API_KEY=your_key_here
-```
-
-2. Run:
+## Docker / Deployment
 
 ```bash
 docker compose up --build
 ```
 
 - Frontend: `http://localhost:8080`
-- Backend: `http://localhost:8000/docs`
+- Backend docs: `http://localhost:8000/docs`
+
+For lightweight cloud deployments, use `requirements-cloud.txt` and enable `CLOUD_MODE=true`.
