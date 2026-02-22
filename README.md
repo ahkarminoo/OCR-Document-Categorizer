@@ -6,6 +6,12 @@ Production-ready OCR pipeline that:
 - categorizes content into topic headings,
 - uses AI only when local confidence is low.
 
+## Live Deployment
+
+- Frontend (Vercel): `https://ocr-document-categorizer-mauve.vercel.app`
+- Backend (Railway): `https://ocr-document-categorizer-production.up.railway.app`
+- Backend API docs: `https://ocr-document-categorizer-production.up.railway.app/docs`
+
 ## Key Features
 
 - **Document crop + perspective correction** using OpenCV.
